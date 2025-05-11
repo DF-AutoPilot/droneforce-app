@@ -9,8 +9,9 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { getTaskById, Task, acceptTask, completeTask } from '@/lib/api';
-import { acceptTaskInstruction, completeTaskInstruction, connection } from '@/lib/solana';
-import { Transaction } from '@solana/web3.js';
+// Import the blockchain service instead of direct functions
+import { blockchainService } from '@/services';
+// Remove Transaction import as it's handled by the service
 import { formatDate } from '@/lib/utils';
 import { toast } from 'sonner';
 import { FormField } from '@/components/ui/form-field';
@@ -21,7 +22,8 @@ interface TaskDetailProps {
 }
 
 export function TaskDetail({ taskId }: TaskDetailProps) {
-  const { publicKey, sendTransaction } = useWallet();
+  const wallet = useWallet();
+  const { publicKey, sendTransaction } = wallet;
   const [task, setTask] = useState<Task | null>(null);
   const [loading, setLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -56,26 +58,22 @@ export function TaskDetail({ taskId }: TaskDetailProps) {
       setIsSubmitting(true);
       
       try {
-        // Since acceptTaskInstruction is async, we need to await it
-        const instruction = await acceptTaskInstruction(publicKey, task.id);
+        // Use the blockchain service to handle the entire transaction process
+        const txSignature = await blockchainService.acceptTask(
+          wallet, // Pass the entire wallet adapter
+          task.id
+        );
         
-        // Create the transaction
-        const transaction = new Transaction().add(instruction);
+        console.log('Transaction signature:', txSignature);
         
-        // Send transaction to the blockchain
-        const txSignature = await sendTransaction(transaction, connection);
-        
-        // Wait for confirmation
-        await connection.confirmTransaction(txSignature, 'confirmed');
-        
-        // Update in Firestore
+        // Update the task in Firestore
         await acceptTask(task.id, publicKey.toBase58());
         
-        // Update local state
+        // Update the local task state
         setTask({
           ...task,
-          operator: publicKey.toBase58(),
           status: 'accepted',
+          operator: publicKey.toBase58(),
           acceptedAt: Date.now()
         });
         
@@ -99,23 +97,16 @@ export function TaskDetail({ taskId }: TaskDetailProps) {
       setIsSubmitting(true);
       
       try {
-        // Since completeTaskInstruction is async, we need to await it
-        const instruction = await completeTaskInstruction(
-          publicKey,
+        // Use blockchain service to handle the transaction
+        const txSignature = await blockchainService.completeTask(
+          wallet,
           task.id,
           arweaveTxId,
           logHash,
           signature
         );
         
-        // Create the transaction
-        const transaction = new Transaction().add(instruction);
-        
-        // Send transaction to the blockchain
-        const txSignature = await sendTransaction(transaction, connection);
-        
-        // Wait for confirmation
-        await connection.confirmTransaction(txSignature, 'confirmed');
+        console.log('Transaction signature:', txSignature);
         
         // Update in Firestore and upload log file if provided
         await completeTask(
