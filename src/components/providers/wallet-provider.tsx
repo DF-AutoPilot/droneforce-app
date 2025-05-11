@@ -6,7 +6,7 @@ import { clusterApiUrl } from '@solana/web3.js';
 import { ReactNode, useMemo } from 'react';
 
 // Import wallet adapter CSS
-require('@solana/wallet-adapter-react-ui/styles.css');
+import '@solana/wallet-adapter-react-ui/styles.css';
 
 interface WalletContextProviderProps {
   children: ReactNode;
@@ -28,7 +28,7 @@ export function WalletContextProvider({ children }: WalletContextProviderProps) 
     () => [
       new PhantomWalletAdapter(),
     ],
-    [network]
+    []
   );
 
   return (
