@@ -1,4 +1,5 @@
 import { db, storage, DEBUG_MODE } from './firebase';
+import { logInfo, logError, logDebug, logBlockchain } from './logger';
 import { 
   collection, 
   doc, 
@@ -107,6 +108,8 @@ const MOCK_TASKS: Task[] = [
 
 // Create a new task
 export async function createTask(task: Omit<Task, 'createdAt' | 'status'>) {
+  logInfo('Creating new task', { taskId: task.id });
+  
   // If in debug mode, just return a mock task without Firebase interaction
   if (DEBUG_MODE) {
     const newTask: Task = {
@@ -114,98 +117,163 @@ export async function createTask(task: Omit<Task, 'createdAt' | 'status'>) {
       status: 'created',
       createdAt: Date.now()
     };
-    console.log('[DEBUG] Created task:', newTask);
+    logDebug('Created task in debug mode', newTask);
     return newTask;
   }
   
-  // Normal Firebase operation
-  const taskRef = doc(tasksCollection, task.id);
-  const newTask: Task = {
-    ...task,
-    status: 'created',
-    createdAt: Date.now()
-  };
-  await setDoc(taskRef, newTask);
-  return newTask;
+  try {
+    // Normal Firebase operation
+    const taskRef = doc(tasksCollection, task.id);
+    const newTask: Task = {
+      ...task,
+      status: 'created',
+      createdAt: Date.now()
+    };
+    logInfo('Saving task to Firestore', { taskId: task.id });
+    await setDoc(taskRef, newTask);
+    logInfo('Task created successfully', { taskId: task.id });
+    return newTask;
+  } catch (error) {
+    logError('Failed to create task', { error, taskId: task.id });
+    throw error;
+  }
 }
 
 // Get all tasks
 export async function getTasks(): Promise<Task[]> {
+  logInfo('Fetching all tasks');
+  
   // If in debug mode, return mock tasks
   if (DEBUG_MODE) {
-    console.log('[DEBUG] Returning mock tasks');
+    logDebug('Returning mock tasks in debug mode');
     return [...MOCK_TASKS];
   }
   
-  // Normal Firebase query
-  const q = query(tasksCollection, orderBy('createdAt', 'desc'));
-  const querySnapshot = await getDocs(q);
-  return querySnapshot.docs.map(doc => doc.data() as Task);
+  try {
+    // Normal Firebase query
+    const q = query(tasksCollection, orderBy('createdAt', 'desc'));
+    logInfo('Executing Firestore query for all tasks');
+    const querySnapshot = await getDocs(q);
+    const tasks = querySnapshot.docs.map(doc => doc.data() as Task);
+    logInfo('Tasks fetched successfully', { count: tasks.length });
+    return tasks;
+  } catch (error) {
+    logError('Failed to fetch tasks', { error });
+    throw error;
+  }
 }
 
 // Get tasks by creator
 export async function getTasksByCreator(creator: string): Promise<Task[]> {
+  logInfo('Fetching tasks by creator', { creator });
+  
   // If in debug mode, filter mock tasks
   if (DEBUG_MODE) {
-    console.log('[DEBUG] Returning mock tasks for creator:', creator);
-    return MOCK_TASKS.filter(task => task.creator === creator);
+    logDebug('Returning mock tasks for creator in debug mode', { creator });
+    const tasks = MOCK_TASKS.filter(task => task.creator === creator);
+    logDebug('Found creator tasks in debug mode', { count: tasks.length });
+    return tasks;
   }
   
-  // Normal Firebase query
-  const q = query(tasksCollection, where('creator', '==', creator), orderBy('createdAt', 'desc'));
-  const querySnapshot = await getDocs(q);
-  return querySnapshot.docs.map(doc => doc.data() as Task);
+  try {
+    // Normal Firebase query
+    const q = query(tasksCollection, where('creator', '==', creator), orderBy('createdAt', 'desc'));
+    logInfo('Executing Firestore query for creator tasks', { creator });
+    const querySnapshot = await getDocs(q);
+    const tasks = querySnapshot.docs.map(doc => doc.data() as Task);
+    logInfo('Creator tasks fetched successfully', { creator, count: tasks.length });
+    return tasks;
+  } catch (error) {
+    logError('Failed to fetch creator tasks', { error, creator });
+    throw error;
+  }
 }
 
 // Get tasks by operator
 export async function getTasksByOperator(operator: string): Promise<Task[]> {
+  logInfo('Fetching tasks by operator', { operator });
+  
   // If in debug mode, filter mock tasks
   if (DEBUG_MODE) {
-    console.log('[DEBUG] Returning mock tasks for operator:', operator);
-    return MOCK_TASKS.filter(task => task.operator === operator);
+    logDebug('Returning mock tasks for operator in debug mode', { operator });
+    const tasks = MOCK_TASKS.filter(task => task.operator === operator);
+    logDebug('Found operator tasks in debug mode', { count: tasks.length });
+    return tasks;
   }
   
-  // Normal Firebase query
-  const q = query(tasksCollection, where('operator', '==', operator), orderBy('createdAt', 'desc'));
-  const querySnapshot = await getDocs(q);
-  return querySnapshot.docs.map(doc => doc.data() as Task);
+  try {
+    // Normal Firebase query
+    const q = query(tasksCollection, where('operator', '==', operator), orderBy('createdAt', 'desc'));
+    logInfo('Executing Firestore query for operator tasks', { operator });
+    const querySnapshot = await getDocs(q);
+    const tasks = querySnapshot.docs.map(doc => doc.data() as Task);
+    logInfo('Operator tasks fetched successfully', { operator, count: tasks.length });
+    return tasks;
+  } catch (error) {
+    logError('Failed to fetch operator tasks', { error, operator });
+    throw error;
+  }
 }
 
-// Get a task by ID
+// Get task by ID
 export async function getTaskById(id: string): Promise<Task | null> {
-  // If in debug mode, find the task in our mock data
+  logInfo('Fetching task by ID', { taskId: id });
+  
+  // If in debug mode, find in mock tasks
   if (DEBUG_MODE) {
-    console.log('[DEBUG] Fetching mock task by ID:', id);
+    logDebug('Looking up mock task by ID in debug mode', { taskId: id });
     const mockTask = MOCK_TASKS.find(task => task.id === id);
+    if (mockTask) {
+      logDebug('Found mock task by ID', { taskId: id });
+    } else {
+      logDebug('Mock task not found', { taskId: id });
+    }
     return mockTask || null;
   }
   
-  // Normal Firebase operation
-  const taskRef = doc(tasksCollection, id);
-  const taskDoc = await getDoc(taskRef);
-  
-  if (taskDoc.exists()) {
-    return taskDoc.data() as Task;
+  try {
+    // Normal Firebase operation
+    const docRef = doc(tasksCollection, id);
+    logInfo('Getting task document from Firestore', { taskId: id });
+    const docSnap = await getDoc(docRef);
+    
+    if (docSnap.exists()) {
+      logInfo('Task found', { taskId: id });
+      return docSnap.data() as Task;
+    } else {
+      logInfo('Task not found', { taskId: id });
+      return null;
+    }
+  } catch (error) {
+    logError('Failed to fetch task by ID', { error, taskId: id });
+    throw error;
   }
-  
-  return null;
 }
 
 // Update a task when accepted
 export async function acceptTask(id: string, operator: string): Promise<void> {
+  logBlockchain('Accepting task', { taskId: id, operator });
+  
   // If in debug mode, just log the operation
   if (DEBUG_MODE) {
-    console.log('[DEBUG] Accepting task:', id, 'by operator:', operator);
+    logDebug('Accepting task in debug mode', { taskId: id, operator });
     return;
   }
   
-  // Normal Firebase operation
-  const taskRef = doc(tasksCollection, id);
-  await updateDoc(taskRef, {
-    operator,
-    status: 'accepted',
-    acceptedAt: Date.now()
-  });
+  try {
+    // Normal Firebase operation
+    const taskRef = doc(tasksCollection, id);
+    logInfo('Updating task status to accepted in Firestore', { taskId: id, operator });
+    await updateDoc(taskRef, {
+      operator,
+      status: 'accepted',
+      acceptedAt: Date.now()
+    });
+    logBlockchain('Task accepted successfully', { taskId: id, operator });
+  } catch (error) {
+    logError('Failed to accept task', { error, taskId: id, operator });
+    throw error;
+  }
 }
 
 // Update a task when completed
@@ -216,32 +284,51 @@ export async function completeTask(
   signature: string,
   logFile?: File
 ): Promise<void> {
+  logBlockchain('Completing task', { 
+    taskId: id, 
+    arweaveTxId, 
+    logHash: logHash.substring(0, 10) + '...', // Truncate for readability
+    signature: signature.substring(0, 10) + '...', // Truncate for readability
+    hasLogFile: !!logFile 
+  });
+  
   // If in debug mode, just log the operation
   if (DEBUG_MODE) {
-    console.log('[DEBUG] Completing task:', id);
-    console.log('[DEBUG] arweaveTxId:', arweaveTxId);
-    console.log('[DEBUG] logHash:', logHash);
-    console.log('[DEBUG] signature:', signature);
-    console.log('[DEBUG] logFile provided:', !!logFile);
+    logDebug('Completing task in debug mode', {
+      taskId: id,
+      arweaveTxId,
+      logHash,
+      signature,
+      hasLogFile: !!logFile
+    });
     return;
   }
   
-  // Normal Firebase operation
-  const taskRef = doc(tasksCollection, id);
-  
-  // Upload log file if provided
-  if (logFile) {
-    const storageRef = ref(storage, `logs/${id}.bin`);
-    await uploadBytes(storageRef, logFile);
+  try {
+    // Normal Firebase operation
+    const taskRef = doc(tasksCollection, id);
+    
+    // Upload log file if provided
+    if (logFile) {
+      logInfo('Uploading log file to storage', { taskId: id, fileName: `logs/${id}.bin`, fileSize: logFile.size });
+      const storageRef = ref(storage, `logs/${id}.bin`);
+      await uploadBytes(storageRef, logFile);
+      logInfo('Log file uploaded successfully', { taskId: id });
+    }
+    
+    logInfo('Updating task status to completed in Firestore', { taskId: id });
+    await updateDoc(taskRef, {
+      arweaveTxId,
+      logHash,
+      signature,
+      status: 'completed',
+      completedAt: Date.now()
+    });
+    logBlockchain('Task completed successfully', { taskId: id });
+  } catch (error) {
+    logError('Failed to complete task', { error, taskId: id });
+    throw error;
   }
-  
-  await updateDoc(taskRef, {
-    arweaveTxId,
-    logHash,
-    signature,
-    status: 'completed',
-    completedAt: Date.now()
-  });
 }
 
 // Update a task when verified
@@ -250,22 +337,45 @@ export async function verifyTask(
   verificationResult: boolean, 
   verificationReportHash: string
 ): Promise<void> {
+  logBlockchain('Verifying task', { 
+    taskId: id, 
+    verificationResult, 
+    verificationReportHash: verificationReportHash.substring(0, 10) + '...' // Truncate for readability
+  });
+  
   // If in debug mode, just log the operation
   if (DEBUG_MODE) {
-    console.log('[DEBUG] Verifying task:', id);
-    console.log('[DEBUG] verificationResult:', verificationResult);
-    console.log('[DEBUG] verificationReportHash:', verificationReportHash);
+    logDebug('Verifying task in debug mode', {
+      taskId: id,
+      verificationResult,
+      verificationReportHash
+    });
     return;
   }
   
-  // Normal Firebase operation
-  const taskRef = doc(tasksCollection, id);
-  await updateDoc(taskRef, {
-    verificationResult,
-    verificationReportHash,
-    status: 'verified',
-    verifiedAt: Date.now()
-  });
+  try {
+    // Normal Firebase operation
+    const taskRef = doc(tasksCollection, id);
+    logInfo('Updating task verification status in Firestore', { 
+      taskId: id, 
+      verificationResult 
+    });
+    
+    await updateDoc(taskRef, {
+      verificationResult,
+      verificationReportHash,
+      status: 'verified',
+      verifiedAt: Date.now()
+    });
+    
+    logBlockchain('Task verified successfully', { 
+      taskId: id, 
+      verificationResult 
+    });
+  } catch (error) {
+    logError('Failed to verify task', { error, taskId: id });
+    throw error;
+  }
 }
 
 // Get download URL for a task log

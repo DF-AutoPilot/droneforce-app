@@ -28,10 +28,7 @@ export function WalletConnect() {
               className="rounded-xl filter invert"
             />
           </div>
-          <CardTitle className="text-xl text-white">DF-Autopilot</CardTitle>
-          <CardDescription className="text-neutral-400">
-            {connected ? 'Your wallet is connected' : 'Connect your Solana wallet to continue'}
-          </CardDescription>
+          <CardTitle className="text-xl text-white">{connected ? 'Your wallet is connected' : 'Connect your Solana wallet to continue'}</CardTitle>
         </CardHeader>
         <CardContent className="flex flex-col items-center pb-2">
           <p className="text-sm text-neutral-400 mb-4 text-center">
@@ -52,7 +49,7 @@ export function WalletConnect() {
             )}
           </div>
         </CardContent>
-        <CardFooter className="flex flex-col text-center text-xs text-neutral-500 pt-0">
+        <CardFooter className="flex flex-col text-center text-xs text-neutral-500 pt-2">
           <p>By connecting, you acknowledge that you are interacting with a frontend-only application.</p>
         </CardFooter>
       </Card>
