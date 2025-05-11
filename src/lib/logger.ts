@@ -1,7 +1,4 @@
-/**
- * Logger utility for DF-AutoPilot
- * Provides centralized logging that can be toggled on/off
- */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 
 // Set this to false to disable all logs
 export const ENABLE_LOGS = true;

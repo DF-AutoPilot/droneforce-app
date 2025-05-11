@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import { Program, AnchorProvider, web3, BN, Idl } from '@project-serum/anchor';
 import { Connection, PublicKey, Keypair, Transaction } from '@solana/web3.js';
 import { logBlockchain, logInfo, logError } from './logger';
