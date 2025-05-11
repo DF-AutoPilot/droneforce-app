@@ -2,16 +2,16 @@
 
 import { useState } from 'react';
 import { useWallet } from '@solana/wallet-adapter-react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Transaction } from '@solana/web3.js';
+import { toast } from 'sonner';
+
 import { createTask } from '@/lib/api';
 import { connection } from '@/lib/solana';
 import { createTaskInstruction } from '@/lib/anchor-client';
 import { generateTaskId } from '@/lib/utils';
-import { Transaction, SystemProgram, LAMPORTS_PER_SOL, PublicKey } from '@solana/web3.js';
-import { toast } from 'sonner';
+import { Form } from '@/components/ui/form';
+import { FormField } from '@/components/ui/form-field';
+import { CheckboxField } from '@/components/ui/checkbox-field';
 
 export function CreateTaskForm() {
   const { publicKey, sendTransaction, signTransaction, signAllTransactions } = useWallet();
@@ -163,117 +163,78 @@ export function CreateTaskForm() {
   };
   
   return (
-    <Card className="w-full max-w-md border border-neutral-800 bg-neutral-950/80 backdrop-blur-sm">
-      <CardHeader>
-        <CardTitle className="text-xl text-white">Create New Task</CardTitle>
-        <CardDescription className="text-neutral-400">
-          Define parameters for a new drone task
-        </CardDescription>
-      </CardHeader>
-      <form onSubmit={handleSubmit}>
-        <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <label htmlFor="location" className="text-sm font-medium text-neutral-400">
-              Location (lat/lng)
-            </label>
-            <Input
-              id="location"
-              name="location"
-              placeholder="37.7749,-122.4194"
-              value={taskData.location}
-              onChange={handleChange}
-              required
-              className="border-neutral-800 bg-neutral-900"
-            />
-          </div>
-          
-          <div className="space-y-2">
-            <label htmlFor="areaSize" className="text-sm font-medium text-neutral-400">
-              Area Size (meters)
-            </label>
-            <Input
-              id="areaSize"
-              name="areaSize"
-              type="number"
-              min="1"
-              value={taskData.areaSize}
-              onChange={handleChange}
-              required
-              className="border-neutral-800 bg-neutral-900"
-            />
-          </div>
-          
-          <div className="space-y-2">
-            <label htmlFor="altitude" className="text-sm font-medium text-neutral-400">
-              Altitude (meters)
-            </label>
-            <Input
-              id="altitude"
-              name="altitude"
-              type="number"
-              min="1"
-              value={taskData.altitude}
-              onChange={handleChange}
-              required
-              className="border-neutral-800 bg-neutral-900"
-            />
-          </div>
-          
-          <div className="space-y-2">
-            <label htmlFor="duration" className="text-sm font-medium text-neutral-400">
-              Duration (seconds)
-            </label>
-            <Input
-              id="duration"
-              name="duration"
-              type="number"
-              min="1"
-              value={taskData.duration}
-              onChange={handleChange}
-              required
-              className="border-neutral-800 bg-neutral-900"
-            />
-          </div>
-          
-          <div className="flex items-center space-x-2">
-            <Checkbox 
-              id="geofencingEnabled" 
-              checked={taskData.geofencingEnabled}
-              onCheckedChange={handleCheckboxChange}
-            />
-            <label
-              htmlFor="geofencingEnabled"
-              className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 text-neutral-400"
-            >
-              Enable Geofencing
-            </label>
-          </div>
-          
-          <div className="space-y-2">
-            <label htmlFor="description" className="text-sm font-medium text-neutral-400">
-              Description
-            </label>
-            <Input
-              id="description"
-              name="description"
-              placeholder="Task description"
-              value={taskData.description}
-              onChange={handleChange}
-              required
-              className="border-neutral-800 bg-neutral-900"
-            />
-          </div>
-        </CardContent>
-        <CardFooter>
-          <Button 
-            type="submit" 
-            className="w-full bg-neutral-800 hover:bg-neutral-700"
-            disabled={isSubmitting}
-          >
-            {isSubmitting ? 'Creating...' : 'Create Task'}
-          </Button>
-        </CardFooter>
-      </form>
-    </Card>
+    <Form
+      title="Create New Task"
+      description="Define parameters for a new drone task"
+      onSubmit={handleSubmit}
+      submitLabel={isSubmitting ? 'Creating...' : 'Create Task'}
+      isSubmitting={isSubmitting}
+    >
+      <FormField
+        id="location"
+        name="location"
+        label="Location (lat/lng)"
+        placeholder="37.7749,-122.4194"
+        value={taskData.location}
+        onChange={handleChange}
+        required
+        helpText="Enter coordinates in format: latitude,longitude"
+      />
+      
+      <FormField
+        id="areaSize"
+        name="areaSize"
+        label="Area Size"
+        type="number"
+        min="1"
+        value={taskData.areaSize}
+        onChange={handleChange}
+        required
+        helpText="Diameter in meters"
+      />
+      
+      <FormField
+        id="altitude"
+        name="altitude"
+        label="Altitude"
+        type="number"
+        min="1"
+        value={taskData.altitude}
+        onChange={handleChange}
+        required
+        helpText="Height in meters"
+      />
+      
+      <FormField
+        id="duration"
+        name="duration"
+        label="Duration"
+        type="number"
+        min="1"
+        value={taskData.duration}
+        onChange={handleChange}
+        required
+        helpText="Time in seconds (max 255)"
+      />
+      
+      <CheckboxField
+        id="geofencingEnabled"
+        label="Enable Geofencing"
+        checked={taskData.geofencingEnabled}
+        onCheckedChange={handleCheckboxChange}
+        helpText="Restrict drone to specified area"
+      />
+      
+      <FormField
+        id="description"
+        name="description"
+        label="Description"
+        placeholder="Task description"
+        value={taskData.description}
+        onChange={handleChange}
+        required
+        helpText="Details about the task"
+      />
+    </Form>
   );
 }

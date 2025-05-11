@@ -1,8 +1,7 @@
 import * as React from "react"
-
 import { cn } from "@/lib/utils"
+import theme from "@/styles/theme"
 
-// Use React.InputHTMLAttributes directly instead of empty interface
 type InputProps = React.InputHTMLAttributes<HTMLInputElement>
 
 const Input = React.forwardRef<HTMLInputElement, InputProps>(
@@ -11,7 +10,9 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
       <input
         type={type}
         className={cn(
-          "flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50",
+          "flex h-10 w-full rounded-md border px-3 py-2 text-sm file:border-0 file:bg-transparent file:text-sm file:font-medium focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50",
+          "border-neutral-800 bg-neutral-900 text-white placeholder:text-neutral-500",
+          "focus:border-blue-600 focus:ring-1 focus:ring-blue-600/20",
           className
         )}
         ref={ref}

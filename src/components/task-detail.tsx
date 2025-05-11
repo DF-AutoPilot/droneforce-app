@@ -11,6 +11,8 @@ import { acceptTaskInstruction, completeTaskInstruction, connection } from '@/li
 import { Transaction } from '@solana/web3.js';
 import { formatDate } from '@/lib/utils';
 import { toast } from 'sonner';
+import { FormField } from '@/components/ui/form-field';
+import theme from '@/styles/theme';
 
 interface TaskDetailProps {
   taskId: string;
@@ -321,7 +323,7 @@ export function TaskDetail({ taskId }: TaskDetailProps) {
             <DialogTrigger asChild>
               <Button className="bg-purple-600 hover:bg-purple-700">Complete Task</Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-md border-neutral-800 bg-neutral-950">
+            <DialogContent className="sm:max-w-md border-neutral-800 bg-neutral-950/90 backdrop-blur-sm">
               <DialogHeader>
                 <DialogTitle className="text-white">Complete Task</DialogTitle>
                 <DialogDescription className="text-neutral-400">
@@ -330,55 +332,49 @@ export function TaskDetail({ taskId }: TaskDetailProps) {
               </DialogHeader>
               
               <div className="space-y-4 py-4">
-                <div className="space-y-2">
-                  <label htmlFor="arweaveTxId" className="text-sm font-medium text-neutral-400">
-                    Arweave Transaction ID
-                  </label>
-                  <Input
-                    id="arweaveTxId"
-                    value={arweaveTxId}
-                    onChange={(e) => setArweaveTxId(e.target.value)}
-                    className="border-neutral-800 bg-neutral-900"
-                    required
-                  />
-                </div>
+                <FormField
+                  id="arweaveTxId"
+                  name="arweaveTxId"
+                  label="Arweave Transaction ID"
+                  value={arweaveTxId}
+                  onChange={(e) => setArweaveTxId(e.target.value)}
+                  required
+                  helpText="Unique identifier for your stored data"
+                />
+                
+                <FormField
+                  id="logHash"
+                  name="logHash"
+                  label="Log Hash"
+                  value={logHash}
+                  onChange={(e) => setLogHash(e.target.value)}
+                  required
+                  helpText="SHA-256 hash of the flight log"
+                />
+                
+                <FormField
+                  id="signature"
+                  name="signature"
+                  label="Signature"
+                  value={signature}
+                  onChange={(e) => setSignature(e.target.value)}
+                  required
+                  helpText="Digital signature of the log data"
+                />
                 
                 <div className="space-y-2">
-                  <label htmlFor="logHash" className="text-sm font-medium text-neutral-400">
-                    Log Hash
-                  </label>
-                  <Input
-                    id="logHash"
-                    value={logHash}
-                    onChange={(e) => setLogHash(e.target.value)}
-                    className="border-neutral-800 bg-neutral-900"
-                    required
-                  />
-                </div>
-                
-                <div className="space-y-2">
-                  <label htmlFor="signature" className="text-sm font-medium text-neutral-400">
-                    Signature
-                  </label>
-                  <Input
-                    id="signature"
-                    value={signature}
-                    onChange={(e) => setSignature(e.target.value)}
-                    className="border-neutral-800 bg-neutral-900"
-                    required
-                  />
-                </div>
-                
-                <div className="space-y-2">
-                  <label htmlFor="logFile" className="text-sm font-medium text-neutral-400">
-                    Log File (.bin)
-                  </label>
+                  <div className="flex justify-between items-baseline">
+                    <label htmlFor="logFile" className="text-sm font-medium text-white">
+                      Log File (.bin)
+                      <span className="text-red-500 ml-1">*</span>
+                    </label>
+                    <span className="text-xs text-neutral-400">Binary flight log data</span>
+                  </div>
                   <Input
                     id="logFile"
                     type="file"
                     accept=".bin"
                     onChange={handleFileChange}
-                    className="border-neutral-800 bg-neutral-900"
                   />
                 </div>
               </div>
