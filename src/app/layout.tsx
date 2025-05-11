@@ -1,8 +1,7 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
-import { WalletContextProvider } from "@/components/providers/wallet-provider";
-import { Toaster } from "@/components/ui/sonner";
+import { ClientWalletProvider } from "../components/client-wallet-provider";
 
 export const metadata: Metadata = {
   title: "DroneForce Protocol",
@@ -19,10 +18,9 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${inter.className} bg-neutral-950 text-white min-h-screen`}>
-        <WalletContextProvider>
+        <ClientWalletProvider>
           {children}
-          <Toaster />
-        </WalletContextProvider>
+        </ClientWalletProvider>
       </body>
     </html>
   );

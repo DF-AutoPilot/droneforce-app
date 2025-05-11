@@ -1,4 +1,5 @@
 import { Connection, PublicKey, Transaction, SystemProgram, LAMPORTS_PER_SOL } from '@solana/web3.js';
+import { DEBUG_MODE } from './firebase';
 
 // Initialize connection to Solana network
 export const connection = new Connection(
@@ -6,14 +7,24 @@ export const connection = new Connection(
   'confirmed'
 );
 
-// Get program ID from environment variable
+// Mock program ID for debug mode
+const DEBUG_PROGRAM_ID = 'Fg6PaFpoGXkYsidMpWTK6W2BeZ7FEfcYkg476zPFsLnS';
+
+// Mock validator ID for debug mode
+const DEBUG_VALIDATOR_PUBKEY = 'Ah9K7dQ8EHaZqcAsgBW8w37yN2eAy3koFmUn4x3CJtod';
+
+// Get program ID - use mock if in debug mode
 export const programId = new PublicKey(
-  process.env.NEXT_PUBLIC_SOLANA_PROGRAM_ID || ''
+  DEBUG_MODE ? 
+    DEBUG_PROGRAM_ID : 
+    (process.env.NEXT_PUBLIC_SOLANA_PROGRAM_ID || DEBUG_PROGRAM_ID)
 );
 
-// Get validator pubkey from environment variable
+// Get validator pubkey - use mock if in debug mode
 export const validatorPubkey = new PublicKey(
-  process.env.NEXT_PUBLIC_VALIDATOR_PUBKEY || ''
+  DEBUG_MODE ? 
+    DEBUG_VALIDATOR_PUBKEY : 
+    (process.env.NEXT_PUBLIC_VALIDATOR_PUBKEY || DEBUG_VALIDATOR_PUBKEY)
 );
 
 // Program instruction layouts
