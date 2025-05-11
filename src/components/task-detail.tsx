@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { getTaskById, Task, acceptTask, completeTask } from '@/lib/api';
 import { acceptTaskInstruction, completeTaskInstruction, connection } from '@/lib/solana';
 import { Transaction } from '@solana/web3.js';
-import { shortenAddress, formatDate } from '@/lib/utils';
+import { formatDate } from '@/lib/utils';
 import { toast } from 'sonner';
 
 interface TaskDetailProps {

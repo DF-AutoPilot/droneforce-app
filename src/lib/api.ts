@@ -8,8 +8,7 @@ import {
   query, 
   where, 
   updateDoc,
-  orderBy,
-  DocumentData
+  orderBy
 } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 

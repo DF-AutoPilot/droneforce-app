@@ -1,4 +1,5 @@
-import { Connection, PublicKey, Transaction, SystemProgram, LAMPORTS_PER_SOL } from '@solana/web3.js';
+/* eslint-disable @typescript-eslint/no-unused-vars */
+import { Connection, PublicKey } from '@solana/web3.js';
 import { DEBUG_MODE } from './firebase';
 
 // Initialize connection to Solana network
@@ -30,13 +31,13 @@ export const validatorPubkey = new PublicKey(
 // Program instruction layouts
 export const createTaskInstruction = (
   wallet: PublicKey,
-  taskId: string, 
-  location: string,
-  areaSize: number,
-  altitude: number,
-  duration: number,
-  geofencingEnabled: boolean,
-  description: string
+  _taskId: string, 
+  _location: string,
+  _areaSize: number,
+  _altitude: number,
+  _duration: number,
+  _geofencingEnabled: boolean,
+  _description: string
 ) => {
   // In a real implementation, this would encode the instruction data
   // according to the contract's specification
@@ -54,7 +55,7 @@ export const createTaskInstruction = (
 
 export const acceptTaskInstruction = (
   wallet: PublicKey,
-  taskId: string
+  _taskId: string
 ) => {
   return {
     programId,
@@ -69,10 +70,10 @@ export const acceptTaskInstruction = (
 
 export const completeTaskInstruction = (
   wallet: PublicKey,
-  taskId: string,
-  arweaveTxId: string,
-  logHash: string,
-  signature: string
+  _taskId: string,
+  _arweaveTxId: string,
+  _logHash: string,
+  _signature: string
 ) => {
   return {
     programId,
@@ -87,9 +88,9 @@ export const completeTaskInstruction = (
 
 export const recordVerificationInstruction = (
   wallet: PublicKey,
-  taskId: string,
-  verificationResult: boolean,
-  verificationReportHash: string
+  _taskId: string,
+  _verificationResult: boolean,
+  _verificationReportHash: string
 ) => {
   return {
     programId,
