@@ -51,31 +51,38 @@ export function TaskDetail({ taskId }: TaskDetailProps) {
     try {
       setIsSubmitting(true);
       
-      // Create the transaction
-      const instruction = acceptTaskInstruction(publicKey, task.id);
-      const transaction = new Transaction().add(instruction);
-      
-      // Send transaction to the blockchain
-      const txSignature = await sendTransaction(transaction, connection);
-      
-      // Wait for confirmation
-      await connection.confirmTransaction(txSignature, 'confirmed');
-      
-      // Update in Firestore
-      await acceptTask(task.id, publicKey.toBase58());
-      
-      // Update local state
-      setTask({
-        ...task,
-        operator: publicKey.toBase58(),
-        status: 'accepted',
-        acceptedAt: Date.now()
-      });
-      
-      toast.success('Task accepted successfully');
-    } catch (error) {
+      try {
+        // Since acceptTaskInstruction is async, we need to await it
+        const instruction = await acceptTaskInstruction(publicKey, task.id);
+        
+        // Create the transaction
+        const transaction = new Transaction().add(instruction);
+        
+        // Send transaction to the blockchain
+        const txSignature = await sendTransaction(transaction, connection);
+        
+        // Wait for confirmation
+        await connection.confirmTransaction(txSignature, 'confirmed');
+        
+        // Update in Firestore
+        await acceptTask(task.id, publicKey.toBase58());
+        
+        // Update local state
+        setTask({
+          ...task,
+          operator: publicKey.toBase58(),
+          status: 'accepted',
+          acceptedAt: Date.now()
+        });
+        
+        toast.success('Task accepted successfully');
+      } catch (instructionError: any) {
+        console.error('Error with accept task instruction:', instructionError);
+        throw new Error(`Failed to create accept task instruction: ${instructionError.message}`);
+      }
+    } catch (error: any) {
       console.error('Error accepting task:', error);
-      toast.error('Failed to accept task');
+      toast.error(`Failed to accept task: ${error.message}`);
     } finally {
       setIsSubmitting(false);
     }
@@ -87,52 +94,58 @@ export function TaskDetail({ taskId }: TaskDetailProps) {
     try {
       setIsSubmitting(true);
       
-      // Create the transaction
-      const instruction = completeTaskInstruction(
-        publicKey,
-        task.id,
-        arweaveTxId,
-        logHash,
-        signature
-      );
-      const transaction = new Transaction().add(instruction);
-      
-      // Send transaction to the blockchain
-      const txSignature = await sendTransaction(transaction, connection);
-      
-      // Wait for confirmation
-      await connection.confirmTransaction(txSignature, 'confirmed');
-      
-      // Update in Firestore and upload log file if provided
-      await completeTask(
-        task.id,
-        arweaveTxId,
-        logHash,
-        signature,
-        logFile || undefined
-      );
-      
-      // Update local state
-      setTask({
-        ...task,
-        arweaveTxId,
-        logHash,
-        signature,
-        status: 'completed',
-        completedAt: Date.now()
-      });
-      
-      toast.success('Task completed successfully');
-      
-      // Reset form fields
-      setArweaveTxId('');
-      setLogHash('');
-      setSignature('');
-      setLogFile(null);
-      
-    } catch (error) {
+      try {
+        // Since completeTaskInstruction is async, we need to await it
+        const instruction = await completeTaskInstruction(
+          publicKey,
+          task.id,
+          arweaveTxId,
+          logHash,
+          signature
+        );
+        
+        // Create the transaction
+        const transaction = new Transaction().add(instruction);
+        
+        // Send transaction to the blockchain
+        const txSignature = await sendTransaction(transaction, connection);
+        
+        // Wait for confirmation
+        await connection.confirmTransaction(txSignature, 'confirmed');
+        
+        // Update in Firestore and upload log file if provided
+        await completeTask(
+          task.id,
+          arweaveTxId,
+          logHash,
+          signature,
+          logFile || undefined
+        );
+        
+        // Update local state
+        setTask({
+          ...task,
+          arweaveTxId,
+          logHash,
+          signature,
+          status: 'completed',
+          completedAt: Date.now()
+        });
+        
+        toast.success('Task completed successfully');
+        
+        // Reset form fields
+        setArweaveTxId('');
+        setLogHash('');
+        setSignature('');
+        setLogFile(null);
+      } catch (instructionError: any) {
+        console.error('Error with complete task instruction:', instructionError);
+        throw new Error(`Failed to create complete task instruction: ${instructionError.message}`);
+      }
+    } catch (error: any) {
       console.error('Error completing task:', error);
-      toast.error('Failed to complete task');
+      toast.error(`Failed to complete task: ${error.message}`);
     } finally {
       setIsSubmitting(false);
     }
