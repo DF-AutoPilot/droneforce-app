@@ -8,7 +8,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 
 export default function Home() {
-  const { connected } = useWallet();
+  const { connected, disconnect } = useWallet();
   
   if (!connected) {
     return <WalletConnect />;
@@ -21,17 +21,16 @@ export default function Home() {
           <div className="flex items-center gap-3">
             <div className="relative w-10 h-10">
               <Image 
-                src="/droneforce-logo.png" 
+                src="/dfautopilot-logo-1.png" 
                 alt="DroneForce Protocol" 
                 width={40} 
                 height={40}
-                className="rounded-lg"
+                className="rounded-lg filter invert"
               />
             </div>
-            <h1 className="text-xl font-bold text-white">DroneForce Protocol</h1>
           </div>
           
-          <nav className="flex gap-4">
+          <nav className="flex gap-4 items-center">
             <Link 
               href="/"
               className="text-neutral-400 hover:text-white transition-colors"
@@ -44,6 +43,12 @@ export default function Home() {
             >
               Tasks
             </Link>
+            <button
+              onClick={() => disconnect()}
+              className="ml-4 px-4 py-1 bg-neutral-800 hover:bg-neutral-700 text-white text-sm rounded transition-colors border border-neutral-700"
+            >
+              Disconnect Wallet
+            </button>
           </nav>
         </header>
         

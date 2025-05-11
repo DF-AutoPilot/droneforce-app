@@ -13,7 +13,7 @@ const WalletMultiButton = dynamic(
 );
 
 export function WalletConnect() {
-  const { connected } = useWallet();
+  const { connected, disconnect } = useWallet();
   
   return (
     <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-neutral-950 to-neutral-900">
@@ -21,25 +21,35 @@ export function WalletConnect() {
         <CardHeader className="text-center">
           <div className="mx-auto mb-4 relative w-20 h-20">
             <Image 
-              src="/droneforce-logo.png" 
+              src="/dfautopilot-logo-1.png" 
               alt="DroneForce Protocol" 
               width={80} 
               height={80}
-              className="rounded-xl"
+              className="rounded-xl filter invert"
             />
           </div>
-          <CardTitle className="text-xl text-white">DroneForce Protocol</CardTitle>
+          <CardTitle className="text-xl text-white">DF-Autopilot</CardTitle>
           <CardDescription className="text-neutral-400">
-            Connect your Solana wallet to continue
+            {connected ? 'Your wallet is connected' : 'Connect your Solana wallet to continue'}
           </CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col items-center pb-2">
           <p className="text-sm text-neutral-400 mb-4 text-center">
-            Use Phantom wallet to interact with the DroneForce Protocol on Solana. All transactions occur on the devnet.
+            Use Phantom wallet to interact with the DF-Autopilot platform on Solana. All transactions occur on the devnet.
           </p>
           
-          <div className="flex justify-center w-full">
+          <div className="flex justify-center w-full space-x-4">
             <WalletMultiButton className="phantom-button" />
+            
+            {connected && (
+              <Button 
+                variant="destructive" 
+                onClick={() => disconnect()}
+                className="bg-red-600 hover:bg-red-700 text-white"
+              >
+                Disconnect Wallet
+              </Button>
+            )}
           </div>
         </CardContent>
         <CardFooter className="flex flex-col text-center text-xs text-neutral-500 pt-0">
