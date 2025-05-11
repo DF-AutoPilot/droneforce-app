@@ -1,0 +1,533 @@
+{
+  "address": "ABHeKDbJ82GEeTAH7K6eNgXZFmLGzSrYFFTvZUtyksfJ",
+  "metadata": {
+    "name": "droneforce_contract",
+    "version": "0.1.0",
+    "spec": "0.1.0",
+    "description": "DroneForce Protocol - Solana smart contract for drone mission tasks"
+  },
+  "instructions": [
+    {
+      "name": "accept_task",
+      "discriminator": [
+        222,
+        196,
+        79,
+        165,
+        120,
+        30,
+        38,
+        120
+      ],
+      "accounts": [
+        {
+          "name": "task",
+          "writable": true
+        },
+        {
+          "name": "operator",
+          "signer": true
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "complete_task",
+      "discriminator": [
+        109,
+        167,
+        192,
+        41,
+        129,
+        108,
+        220,
+        196
+      ],
+      "accounts": [
+        {
+          "name": "task",
+          "writable": true
+        },
+        {
+          "name": "operator",
+          "signer": true
+        }
+      ],
+      "args": [
+        {
+          "name": "arweave_tx_id",
+          "type": "string"
+        },
+        {
+          "name": "log_hash",
+          "type": {
+            "array": [
+              "u8",
+              32
+            ]
+          }
+        },
+        {
+          "name": "signature",
+          "type": {
+            "array": [
+              "u8",
+              64
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "create_task",
+      "discriminator": [
+        194,
+        80,
+        6,
+        180,
+        232,
+        127,
+        48,
+        171
+      ],
+      "accounts": [
+        {
+          "name": "task",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  116,
+                  97,
+                  115,
+                  107
+                ]
+              },
+              {
+                "kind": "arg",
+                "path": "task_id"
+              }
+            ]
+          }
+        },
+        {
+          "name": "creator",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "task_id",
+          "type": "string"
+        },
+        {
+          "name": "location_lat",
+          "type": "f64"
+        },
+        {
+          "name": "location_lng",
+          "type": "f64"
+        },
+        {
+          "name": "area_size",
+          "type": "u32"
+        },
+        {
+          "name": "task_type",
+          "type": "u8"
+        },
+        {
+          "name": "altitude",
+          "type": "u16"
+        },
+        {
+          "name": "geofencing_enabled",
+          "type": "bool"
+        },
+        {
+          "name": "description",
+          "type": "string"
+        },
+        {
+          "name": "validator_pubkey",
+          "type": "pubkey"
+        }
+      ]
+    },
+    {
+      "name": "record_verification",
+      "discriminator": [
+        179,
+        127,
+        50,
+        99,
+        1,
+        78,
+        32,
+        190
+      ],
+      "accounts": [
+        {
+          "name": "task",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  116,
+                  97,
+                  115,
+                  107
+                ]
+              },
+              {
+                "kind": "arg",
+                "path": "task_id"
+              }
+            ]
+          }
+        },
+        {
+          "name": "validator",
+          "signer": true
+        }
+      ],
+      "args": [
+        {
+          "name": "task_id",
+          "type": "string"
+        },
+        {
+          "name": "verification_result",
+          "type": "bool"
+        },
+        {
+          "name": "verification_report_hash",
+          "type": {
+            "array": [
+              "u8",
+              32
+            ]
+          }
+        }
+      ]
+    }
+  ],
+  "accounts": [
+    {
+      "name": "TaskAccount",
+      "discriminator": [
+        235,
+        32,
+        10,
+        23,
+        81,
+        60,
+        170,
+        203
+      ]
+    }
+  ],
+  "events": [
+    {
+      "name": "TaskAcceptedEvent",
+      "discriminator": [
+        1,
+        251,
+        160,
+        119,
+        215,
+        221,
+        57,
+        15
+      ]
+    },
+    {
+      "name": "TaskCompletedEvent",
+      "discriminator": [
+        8,
+        139,
+        204,
+        225,
+        74,
+        89,
+        212,
+        253
+      ]
+    },
+    {
+      "name": "TaskCreatedEvent",
+      "discriminator": [
+        79,
+        197,
+        64,
+        4,
+        163,
+        171,
+        45,
+        102
+      ]
+    },
+    {
+      "name": "TaskVerifiedEvent",
+      "discriminator": [
+        103,
+        16,
+        96,
+        205,
+        80,
+        75,
+        110,
+        250
+      ]
+    }
+  ],
+  "errors": [
+    {
+      "code": 6000,
+      "name": "DescriptionTooLong",
+      "msg": "Description is too long"
+    },
+    {
+      "code": 6001,
+      "name": "ArweaveTxIdTooLong",
+      "msg": "Arweave transaction ID is too long"
+    },
+    {
+      "code": 6002,
+      "name": "InvalidTaskStatus",
+      "msg": "Invalid task status for this operation"
+    },
+    {
+      "code": 6003,
+      "name": "UnauthorizedOperator",
+      "msg": "Unauthorized operator"
+    },
+    {
+      "code": 6004,
+      "name": "InvalidLatitude",
+      "msg": "Invalid latitude value"
+    },
+    {
+      "code": 6005,
+      "name": "InvalidLongitude",
+      "msg": "Invalid longitude value"
+    },
+    {
+      "code": 6006,
+      "name": "UnauthorizedValidator",
+      "msg": "Unauthorized validator"
+    },
+    {
+      "code": 6007,
+      "name": "AlreadyVerified",
+      "msg": "Task has already been verified"
+    }
+  ],
+  "types": [
+    {
+      "name": "TaskAcceptedEvent",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "operator",
+            "type": "pubkey"
+          },
+          {
+            "name": "timestamp",
+            "type": "i64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "TaskAccount",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "creator",
+            "type": "pubkey"
+          },
+          {
+            "name": "operator",
+            "type": "pubkey"
+          },
+          {
+            "name": "status",
+            "type": {
+              "defined": {
+                "name": "TaskStatus"
+              }
+            }
+          },
+          {
+            "name": "arweave_tx_id",
+            "type": "string"
+          },
+          {
+            "name": "log_hash",
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          },
+          {
+            "name": "signature",
+            "type": {
+              "array": [
+                "u8",
+                64
+              ]
+            }
+          },
+          {
+            "name": "timestamp",
+            "type": "i64"
+          },
+          {
+            "name": "location_lat",
+            "type": "i64"
+          },
+          {
+            "name": "location_lng",
+            "type": "i64"
+          },
+          {
+            "name": "area_size",
+            "type": "u32"
+          },
+          {
+            "name": "task_type",
+            "type": "u8"
+          },
+          {
+            "name": "altitude",
+            "type": "u16"
+          },
+          {
+            "name": "geofencing_enabled",
+            "type": "bool"
+          },
+          {
+            "name": "description",
+            "type": "string"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          },
+          {
+            "name": "validator_pubkey",
+            "type": "pubkey"
+          },
+          {
+            "name": "verification_result",
+            "type": "bool"
+          },
+          {
+            "name": "verification_report_hash",
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "TaskCompletedEvent",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "operator",
+            "type": "pubkey"
+          },
+          {
+            "name": "arweave_tx_id",
+            "type": "string"
+          },
+          {
+            "name": "timestamp",
+            "type": "i64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "TaskCreatedEvent",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "task_id",
+            "type": "string"
+          },
+          {
+            "name": "creator",
+            "type": "pubkey"
+          },
+          {
+            "name": "timestamp",
+            "type": "i64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "TaskStatus",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "Created"
+          },
+          {
+            "name": "Accepted"
+          },
+          {
+            "name": "Completed"
+          }
+        ]
+      }
+    },
+    {
+      "name": "TaskVerifiedEvent",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "task_id",
+            "type": "string"
+          },
+          {
+            "name": "validator",
+            "type": "pubkey"
+          },
+          {
+            "name": "verification_result",
+            "type": "bool"
+          },
+          {
+            "name": "timestamp",
+            "type": "i64"
+          }
+        ]
+      }
+    }
+  ]
+}

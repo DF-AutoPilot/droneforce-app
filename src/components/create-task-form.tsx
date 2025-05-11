@@ -7,14 +7,14 @@ import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { createTask } from '@/lib/api';
-import { createTaskInstruction } from '@/lib/solana';
-import { generateTaskId } from '@/lib/utils';
 import { connection } from '@/lib/solana';
+import { createTaskInstruction } from '@/lib/anchor-client';
+import { generateTaskId } from '@/lib/utils';
 import { Transaction, SystemProgram, LAMPORTS_PER_SOL, PublicKey } from '@solana/web3.js';
 import { toast } from 'sonner';
 
 export function CreateTaskForm() {
-  const { publicKey, sendTransaction } = useWallet();
+  const { publicKey, sendTransaction, signTransaction, signAllTransactions } = useWallet();
   const [isSubmitting, setIsSubmitting] = useState(false);
   
   const [taskData, setTaskData] = useState({
@@ -66,23 +66,15 @@ export function CreateTaskForm() {
       // Get recent blockhash for transaction
       const { blockhash } = await connection.getLatestBlockhash('confirmed');
       
-      // Create the transaction with our simplified instruction
-      console.log('Creating task with parameters:', {
-        taskId,
-        location: taskData.location,
-        areaSize: taskData.areaSize,
-        altitude: taskData.altitude,
-        duration: taskData.duration,
-        geofencingEnabled: taskData.geofencingEnabled
-      });
-      
       // Ensure duration is within valid range for uint8 (0-255)
       const safeTaskDuration = Math.min(taskData.duration, 255);
       
       try {
-        // Since createTaskInstruction is async, we need to await it
-        const instruction = await createTaskInstruction(
+        // createTaskInstruction now returns a complete transaction
+        const transaction = await createTaskInstruction(
           publicKey,
+          signTransaction,
+          signAllTransactions,
           taskId,
           taskData.location,
           taskData.areaSize,
@@ -92,26 +84,12 @@ export function CreateTaskForm() {
           taskData.description
         );
         
-        // Log the instruction details for debugging
-        console.log('Instruction details:', {
-          programId: instruction.programId.toString(),
-          keys: instruction.keys.map(k => ({
-            pubkey: k.pubkey.toString(),
-            isSigner: k.isSigner,
-            isWritable: k.isWritable
-          })),
-          dataLength: instruction.data.length,
-        });
-        
-        // Create and configure the transaction
-        const transaction = new Transaction();
-        transaction.add(instruction);
+        // Set the feePayer and recentBlockhash
         transaction.feePayer = publicKey;
         transaction.recentBlockhash = blockhash;
         
         console.log('Program transaction created for task:', {
           taskId,
-          programId: instruction.programId.toString(),
           feePayer: publicKey.toString(),
           recentBlockhash: blockhash
         });
@@ -159,9 +137,9 @@ export function CreateTaskForm() {
           creator: publicKey.toBase58(),
           ...taskData
         });
-      } catch (instructionError: any) {
-        console.error('Error creating transaction instruction:', instructionError);
-        throw new Error(`Failed to create transaction instruction: ${instructionError.message}`);
+      } catch (transactionError: any) {
+        console.error('Error creating transaction:', transactionError);
+        throw new Error(`Failed to create transaction: ${transactionError.message}`);
       }
       
       toast.success('Task created successfully');
