@@ -8,13 +8,16 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { getTaskById, Task, acceptTask, completeTask } from '@/lib/api';
+import { getTaskById, acceptTask, completeTask } from '@/lib/api';
+import { Task } from '@/types/task';
 // Import the blockchain service instead of direct functions
 import { blockchainService } from '@/services';
 // Remove Transaction import as it's handled by the service
 import { formatDate } from '@/lib/utils';
 import { toast } from 'sonner';
 import { FormField } from '@/components/ui/form-field';
+import { VerifyTaskForm } from '@/components/task/verify-task-form';
+import { ClaimPaymentButton } from '@/components/task/claim-payment-button';
 import theme from '@/styles/theme';
 
 interface TaskDetailProps {
@@ -174,6 +177,7 @@ export function TaskDetail({ taskId }: TaskDetailProps) {
   
   const isCreator = publicKey?.toBase58() === task.creator;
   const isOperator = publicKey?.toBase58() === task.operator;
+  const isValidator = publicKey?.toString() === process.env.NEXT_PUBLIC_VALIDATOR_PUBKEY;
   const canAccept = !isCreator && !task.operator && task.status === 'created';
   const canComplete = isOperator && task.status === 'accepted';
   
@@ -295,9 +299,80 @@ export function TaskDetail({ taskId }: TaskDetailProps) {
                 <h3 className="text-sm font-medium text-neutral-400">Verified At</h3>
                 <p className="text-white">{task.verifiedAt ? formatDate(task.verifiedAt) : 'N/A'}</p>
               </div>
+              
+              {task.paymentEscrow?.acceptedTxSignature && (
+                <div className="space-y-2">
+                  <h3 className="text-sm font-medium text-neutral-400">Payment Released</h3>
+                  <p className="text-white break-all">
+                    <span className="text-green-400">✓</span> Payment released to operator
+                  </p>
+                </div>
+              )}
             </div>
           </div>
         ) : null}
+        
+        {/* Add escrow payment details if available */}
+        {task.paymentEscrow && task.status !== 'verified' && (
+          <div className="mt-6 space-y-4 border-t border-neutral-800 pt-4">
+            <h3 className="text-md font-medium text-white">Payment Escrow</h3>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <h3 className="text-sm font-medium text-neutral-400">Payment Amount</h3>
+                <p className="text-white">{task.paymentAmount} tokens</p>
+              </div>
+              
+              <div className="space-y-2">
+                <h3 className="text-sm font-medium text-neutral-400">Token</h3>
+                <p className="text-white break-all">{task.selectedToken || task.paymentEscrow.tokenMint}</p>
+              </div>
+              
+              <div className="space-y-2">
+                <h3 className="text-sm font-medium text-neutral-400">Status</h3>
+                <p className="text-white">
+                  {task.paymentEscrow.acceptedTxSignature ? (
+                    <span className="text-green-400">Released</span>
+                  ) : task.paymentEscrow.cancelledTxSignature ? (
+                    <span className="text-red-400">Cancelled</span>
+                  ) : (
+                    <span className="text-yellow-400">In Escrow</span>
+                  )}
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+        
+        {/* Task verification form for validators */}
+        {task.status === 'completed' && !task.verificationResult && (
+          <div className="mt-6 space-y-4 border-t border-neutral-800 pt-4">
+            <VerifyTaskForm 
+              task={task} 
+              onVerificationComplete={() => {
+                // Reload the task data after verification
+                getTaskById(task.id).then(updatedTask => {
+                  if (updatedTask) {
+                    setTask(updatedTask);
+                  }
+                });
+              }} 
+            />
+          </div>
+        )}
+        
+        {/* Payment claim button for operators */}
+        <ClaimPaymentButton 
+          task={task}
+          onPaymentClaimed={() => {
+            // Reload the task data after payment is claimed
+            getTaskById(task.id).then(updatedTask => {
+              if (updatedTask) {
+                setTask(updatedTask);
+              }
+            });
+          }}
+        />
       </CardContent>
       
       <CardFooter className="flex justify-end space-x-4">

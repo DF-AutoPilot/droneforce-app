@@ -15,6 +15,7 @@ interface FormFieldProps {
   onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   required?: boolean;
   min?: string;
+  step?: string;
   helpText?: string;
   error?: string;
 }
@@ -29,6 +30,7 @@ export function FormField({
   onChange,
   required = false,
   min,
+  step,
   helpText,
   error
 }: FormFieldProps) {
@@ -53,6 +55,7 @@ export function FormField({
         onChange={onChange}
         required={required}
         min={min}
+        step={step}
         className={`border-neutral-800 bg-neutral-900 text-white placeholder:text-neutral-500 ${
           error ? 'border-red-500 focus:border-red-500' : 'focus:border-blue-500 focus:ring-blue-500/10'
         }`}

@@ -1,4 +1,5 @@
 import { db, storage, DEBUG_MODE } from './firebase';
+import { Task, EscrowPayment } from '@/types/task';
 import { logInfo, logError, logDebug, logBlockchain } from './logger';
 import { 
   collection, 
@@ -13,27 +14,7 @@ import {
 } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 
-export interface Task {
-  id: string;
-  creator: string;
-  operator?: string;
-  location: string;
-  areaSize: number;
-  altitude: number;
-  duration: number;
-  geofencingEnabled: boolean;
-  description: string;
-  status: 'created' | 'accepted' | 'completed' | 'verified';
-  createdAt: number;
-  acceptedAt?: number;
-  completedAt?: number;
-  verifiedAt?: number;
-  arweaveTxId?: string;
-  logHash?: string;
-  signature?: string;
-  verificationResult?: boolean;
-  verificationReportHash?: string;
-}
+// Task interface is now imported from @/types/task
 
 const tasksCollection = collection(db, 'tasks');
 
@@ -361,12 +342,14 @@ export async function verifyTask(
       verificationResult 
     });
     
-    await updateDoc(taskRef, {
+    const updateData: any = {
       verificationResult,
       verificationReportHash,
       status: 'verified',
       verifiedAt: Date.now()
-    });
+    };
+    
+    await updateDoc(taskRef, updateData);
     
     logBlockchain('Task verified successfully', { 
       taskId: id, 

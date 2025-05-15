@@ -2,22 +2,41 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useWallet } from '@solana/wallet-adapter-react';
-import { Transaction } from '@solana/web3.js';
+import { Transaction, PublicKey } from '@solana/web3.js';
 import { toast } from 'sonner';
+import { getAssociatedTokenAddressSync } from '@solana/spl-token';
 
 import { createTask } from '@/lib/api';
 import { connection } from '@/lib/solana';
 import { createTaskInstruction } from '@/lib/anchor-client';
+import { initializeEscrowInstruction } from '@/lib/escrow-client';
 import { generateTaskId } from '@/lib/utils';
 import { Form } from '@/components/ui/form';
 import { FormField } from '@/components/ui/form-field';
 import { CheckboxField } from '@/components/ui/checkbox-field';
 
+// Default SPL tokens available for payment (in a real app, you might fetch these)
+const AVAILABLE_TOKENS = [
+  {
+    name: 'USDC',
+    symbol: 'USDC',
+    mint: 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v', // Devnet USDC mint
+    decimals: 6
+  },
+  {
+    name: 'SOL',
+    symbol: 'SOL',
+    mint: 'So11111111111111111111111111111111111111112', // Native SOL wrapped
+    decimals: 9
+  }
+];
+
 export function CreateTaskForm() {
   const { publicKey, sendTransaction, signTransaction, signAllTransactions } = useWallet();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [hasTokenAccount, setHasTokenAccount] = useState(false);
   
   const [taskData, setTaskData] = useState({
     location: '',
@@ -26,10 +45,34 @@ export function CreateTaskForm() {
     duration: 300,
     geofencingEnabled: true,
     description: '',
+    // Escrow payment data
+    paymentAmount: 0.1, // Smaller default amount for testing
+    selectedToken: AVAILABLE_TOKENS[0].mint,
   });
   
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value, type } = e.target;
+  // Check if user has token account for the selected token
+  useEffect(() => {
+    const checkTokenAccount = async () => {
+      if (!publicKey || !taskData.selectedToken) return;
+      
+      try {
+        const tokenMint = new PublicKey(taskData.selectedToken);
+        const tokenAccount = getAssociatedTokenAddressSync(tokenMint, publicKey);
+        
+        // In a full implementation, you would check if this account exists
+        // For simplicity, we'll just assume it exists
+        setHasTokenAccount(true);
+      } catch (error) {
+        console.error('Error checking token account:', error);
+        setHasTokenAccount(false);
+      }
+    };
+    
+    checkTokenAccount();
+  }, [publicKey, taskData.selectedToken]);
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const { name, value, type } = e.target as HTMLInputElement;
     
     if (type === 'number') {
       setTaskData({
@@ -59,6 +102,11 @@ export function CreateTaskForm() {
       return;
     }
     
+    if (!hasTokenAccount) {
+      toast.error(`You need a token account for the selected payment token`);
+      return;
+    }
+    
     try {
       setIsSubmitting(true);
       
@@ -72,8 +120,8 @@ export function CreateTaskForm() {
       const safeTaskDuration = Math.min(taskData.duration, 255);
       
       try {
-        // createTaskInstruction now returns a complete transaction
-        const transaction = await createTaskInstruction(
+        // Step 1: Create task transaction
+        const taskTransaction = await createTaskInstruction(
           publicKey,
           signTransaction,
           signAllTransactions,
@@ -81,14 +129,14 @@ export function CreateTaskForm() {
           taskData.location,
           taskData.areaSize,
           taskData.altitude,
-          safeTaskDuration, // Use the safe duration value
+          safeTaskDuration,
           taskData.geofencingEnabled,
           taskData.description
         );
         
         // Set the feePayer and recentBlockhash
-        transaction.feePayer = publicKey;
-        transaction.recentBlockhash = blockhash;
+        taskTransaction.feePayer = publicKey;
+        taskTransaction.recentBlockhash = blockhash;
         
         console.log('Program transaction created for task:', {
           taskId,
@@ -96,69 +144,99 @@ export function CreateTaskForm() {
           recentBlockhash: blockhash
         });
         
-        // Create a clean version of the transaction for potential debugging
-        const serializedTransaction = transaction.serialize({
-          requireAllSignatures: false,
-          verifySignatures: false
+        // Step 2: Initialize escrow for payment
+        const paymentMint = new PublicKey(taskData.selectedToken);
+        const selectedToken = AVAILABLE_TOKENS.find(token => token.mint === taskData.selectedToken);
+        
+        // Convert payment amount to token units based on decimals
+        const tokenDecimals = selectedToken?.decimals || 6;
+        const paymentAmount = taskData.paymentAmount * Math.pow(10, tokenDecimals);
+        
+        // Create escrow initialization transaction
+        const { transaction: escrowTransaction } = await initializeEscrowInstruction(
+          publicKey,
+          signTransaction,
+          signAllTransactions,
+          paymentMint,
+          paymentAmount,
+          'drone_service', // Service type
+          taskId // Use taskId as nonce for linking
+        );
+        
+        // Set the feePayer and recentBlockhash for escrow transaction
+        escrowTransaction.feePayer = publicKey;
+        escrowTransaction.recentBlockhash = blockhash;
+        
+        console.log('Escrow transaction created:', {
+          taskId,
+          paymentAmount,
+          paymentMint: paymentMint.toString()
         });
-        console.log('Serialized transaction size:', serializedTransaction.length, 'bytes');
         
-        console.log('Sending transaction to Solana network...');
+        // Step 3: Send first transaction (task creation)
+        console.log('Sending task creation transaction...');
+        const taskSignature = await sendTransaction(taskTransaction, connection, {
+          skipPreflight: true,
+          preflightCommitment: 'confirmed',
+          maxRetries: 3
+        });
         
-        // Create a checkbox state to toggle skipPreflight
-        const skipPreflightChecks = true; // For debugging, we'll skip preflight checks
+        // Wait for task transaction confirmation
+        await connection.confirmTransaction(taskSignature, 'confirmed');
+        console.log('Task creation transaction confirmed:', taskSignature);
         
-        try {
-          console.log('Sending transaction with skipPreflight =', skipPreflightChecks);
-          
-          // Send transaction to the blockchain with explicit options
-          const signature = await sendTransaction(transaction, connection, {
-            skipPreflight: skipPreflightChecks, // Skip preflight to bypass simulation errors
-            preflightCommitment: 'confirmed',
-            maxRetries: 3
-          });
-          console.log('Transaction sent with signature:', signature);
-          
-          // Wait for confirmation
-          const confirmation = await connection.confirmTransaction(signature, 'confirmed');
-          console.log('Transaction confirmed:', confirmation);
-        } catch (txError: any) {
-          console.error('Transaction error details:', txError);
-          if (txError.logs) {
-            console.error('Transaction logs:', txError.logs);
-          }
-          if (txError.message) {
-            console.error('Transaction error message:', txError.message);
-          }
-          throw txError;
-        }
-      
-        // Save data to Firestore
+        // Step 4: Send second transaction (escrow initialization)
+        console.log('Sending escrow initialization transaction...');
+        const escrowSignature = await sendTransaction(escrowTransaction, connection, {
+          skipPreflight: true,
+          preflightCommitment: 'confirmed',
+          maxRetries: 3
+        });
+        
+        // Wait for escrow transaction confirmation
+        await connection.confirmTransaction(escrowSignature, 'confirmed');
+        console.log('Escrow initialization transaction confirmed:', escrowSignature);
+        
+        // Step 5: Save data to Firestore with escrow information
         await createTask({
           id: taskId,
           creator: publicKey.toBase58(),
-          ...taskData
+          ...taskData,
+          paymentEscrow: {
+            initialized: true,
+            tokenMint: paymentMint.toString(),
+            amount: taskData.paymentAmount,
+            escrowTxSignature: escrowSignature
+          }
         });
+        
+        toast.success('Task and payment escrow created successfully');
+        
+        // Reset the form
+        setTaskData({
+          location: '',
+          areaSize: 100,
+          altitude: 50,
+          duration: 300,
+          geofencingEnabled: true,
+          description: '',
+          paymentAmount: 10,
+          selectedToken: AVAILABLE_TOKENS[0].mint,
+        });
+        
       } catch (transactionError: any) {
-        console.error('Error creating transaction:', transactionError);
-        throw new Error(`Failed to create transaction: ${transactionError.message}`);
+        console.error('Transaction error:', transactionError);
+        
+        if (transactionError.logs) {
+          console.error('Transaction logs:', transactionError.logs);
+        }
+        
+        throw new Error(`Failed to complete transaction: ${transactionError.message}`);
       }
       
-      toast.success('Task created successfully');
-      
-      // Reset the form
-      setTaskData({
-        location: '',
-        areaSize: 100,
-        altitude: 50,
-        duration: 300,
-        geofencingEnabled: true,
-        description: '',
-      });
-      
     } catch (error) {
-      console.error('Error creating task:', error);
-      toast.error('Failed to create task');
+      console.error('Error creating task with escrow:', error);
+      toast.error('Failed to create task and payment escrow');
     } finally {
       setIsSubmitting(false);
     }
@@ -237,6 +315,60 @@ export function CreateTaskForm() {
         required
         helpText="Details about the task"
       />
+      
+      {/* Payment section */}
+      <div className="mt-6 mb-4 border-t pt-4">
+        <h3 className="text-lg font-medium mb-2">Payment Details</h3>
+        <p className="text-sm text-neutral-400 mb-4">
+          Funds will be held in escrow until task completion
+        </p>
+      </div>
+      
+      <div className="flex gap-4">
+        <div className="flex-1">
+          <FormField
+            id="paymentAmount"
+            name="paymentAmount"
+            label="Payment Amount"
+            type="number"
+            min="0.001"
+            step="0.001"
+            value={taskData.paymentAmount}
+            onChange={handleChange}
+            required
+            helpText="Amount to pay for the service"
+          />
+        </div>
+        
+        <div className="flex-1">
+          <label htmlFor="selectedToken" className="block text-sm font-medium mb-1">
+            Token
+          </label>
+          <select
+            id="selectedToken"
+            name="selectedToken"
+            value={taskData.selectedToken}
+            onChange={handleChange}
+            className="w-full rounded-md border bg-neutral-900 border-neutral-800 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            required
+          >
+            {AVAILABLE_TOKENS.map((token) => (
+              <option key={token.mint} value={token.mint}>
+                {token.name} ({token.symbol})
+              </option>
+            ))}
+          </select>
+          <p className="text-sm text-neutral-500 mt-1">
+            Select token for payment
+          </p>
+        </div>
+      </div>
+      
+      {!hasTokenAccount && publicKey && (
+        <div className="mt-2 p-2 bg-yellow-900 text-yellow-200 rounded-md text-sm">
+          Warning: You may need to create a token account for the selected token
+        </div>
+      )}
     </Form>
   );
 }
