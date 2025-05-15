@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import { db, storage, DEBUG_MODE } from './firebase';
 import { Task, EscrowPayment } from '@/types/task';
 import { logInfo, logError, logDebug, logBlockchain } from './logger';

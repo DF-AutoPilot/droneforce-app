@@ -3,7 +3,8 @@
 import { useEffect, useState } from 'react';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { getTasks, Task } from '@/lib/api';
+import { getTasks } from '@/lib/api';
+import { Task } from '@/types/task';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { TaskCard } from '@/components/task/task-card';
 

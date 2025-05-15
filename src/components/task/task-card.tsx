@@ -1,7 +1,7 @@
 "use client";
 
 import Link from 'next/link';
-import { Task } from '@/lib/api';
+import { Task } from '@/types/task';
 import { shortenAddress, formatDate } from '@/lib/utils';
 
 interface TaskCardProps {
