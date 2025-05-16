@@ -32,10 +32,8 @@ export function TaskDetail({ taskId }: TaskDetailProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   
   // Task completion form fields
-  const [arweaveTxId, setArweaveTxId] = useState('');
-  const [logHash, setLogHash] = useState('');
-  const [signature, setSignature] = useState('');
   const [logFile, setLogFile] = useState<File | null>(null);
+  const [isFileUploading, setIsFileUploading] = useState(false);
   
   useEffect(() => {
     const loadTask = async () => {
@@ -94,12 +92,25 @@ export function TaskDetail({ taskId }: TaskDetailProps) {
   };
   
   const handleCompleteTask = async () => {
-    if (!publicKey || !task) return;
+    if (!publicKey || !task || !logFile) {
+      toast.error('Please select a log file');
+      return;
+    }
     
     try {
       setIsSubmitting(true);
+      setIsFileUploading(true);
+      
+      // Generate a simple hash from the file content
+      const fileHash = await generateFileHash(logFile);
       
       try {
+        // Generate placeholder values for blockchain integration
+        // In a real implementation, these would be derived from the file or blockchain transaction
+        const arweaveTxId = `ar:mock:${Date.now().toString(36)}`;
+        const logHash = fileHash;
+        const signature = `sig:${Date.now().toString(36)}:${publicKey.toString().slice(0, 8)}`;
+        
         // Use blockchain service to handle the transaction
         const txSignature = await blockchainService.completeTask(
           wallet,
@@ -111,13 +122,16 @@ export function TaskDetail({ taskId }: TaskDetailProps) {
         
         console.log('Transaction signature:', txSignature);
         
-        // Update in Firestore and upload log file if provided
+        // Rename the file with the correct format before upload
+        const renamedFile = renameFile(logFile, `task-${task.id}-${logFile.name}`);
+        
+        // Update in Firestore and upload log file
         await completeTask(
           task.id,
           arweaveTxId,
           logHash,
           signature,
-          logFile || undefined
+          renamedFile
         );
         
         // Update local state
@@ -133,9 +147,6 @@ export function TaskDetail({ taskId }: TaskDetailProps) {
         toast.success('Task completed successfully');
         
         // Reset form fields
-        setArweaveTxId('');
-        setLogHash('');
-        setSignature('');
         setLogFile(null);
       } catch (instructionError: any) {
         console.error('Error with complete task instruction:', instructionError);
@@ -146,7 +157,35 @@ export function TaskDetail({ taskId }: TaskDetailProps) {
       toast.error(`Failed to complete task: ${error.message}`);
     } finally {
       setIsSubmitting(false);
+      setIsFileUploading(false);
     }
+  };
+  
+  // Helper function to generate a simple hash from file content
+  const generateFileHash = async (file: File): Promise<string> => {
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        if (e.target && e.target.result) {
+          // In a real app, you would use a proper hashing algorithm
+          // This is a simple placeholder
+          const content = e.target.result.toString();
+          const hash = btoa(content.substring(0, 100)).replace(/=/g, ''); 
+          resolve(`0x${hash}`);
+        } else {
+          resolve(`0x${Date.now().toString(16)}`);
+        }
+      };
+      reader.onerror = () => {
+        resolve(`0x${Date.now().toString(16)}`);
+      };
+      reader.readAsText(file.slice(0, 1024)); // Read just the beginning of the file for demo
+    });
+  };
+  
+  // Helper function to rename a file while keeping the same content
+  const renameFile = (file: File, newName: string): File => {
+    return new File([file], newName, { type: file.type });
   };
   
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -400,50 +439,64 @@ export function TaskDetail({ taskId }: TaskDetailProps) {
               </DialogHeader>
               
               <div className="space-y-4 py-4">
-                <FormField
-                  id="arweaveTxId"
-                  name="arweaveTxId"
-                  label="Arweave Transaction ID"
-                  value={arweaveTxId}
-                  onChange={(e) => setArweaveTxId(e.target.value)}
-                  required
-                  helpText="Unique identifier for your stored data"
-                />
-                
-                <FormField
-                  id="logHash"
-                  name="logHash"
-                  label="Log Hash"
-                  value={logHash}
-                  onChange={(e) => setLogHash(e.target.value)}
-                  required
-                  helpText="SHA-256 hash of the flight log"
-                />
-                
-                <FormField
-                  id="signature"
-                  name="signature"
-                  label="Signature"
-                  value={signature}
-                  onChange={(e) => setSignature(e.target.value)}
-                  required
-                  helpText="Digital signature of the log data"
-                />
+                <div className="mb-6 p-4 bg-blue-950/30 border border-blue-800 rounded-md">
+                  <h3 className="text-sm font-medium text-white mb-2">Task Completion</h3>
+                  <p className="text-sm text-blue-300 mb-4">
+                    Upload your flight log file to complete this task. The file will be automatically renamed to match the task ID.
+                  </p>
+                </div>
                 
                 <div className="space-y-2">
                   <div className="flex justify-between items-baseline">
                     <label htmlFor="logFile" className="text-sm font-medium text-white">
-                      Log File (.bin)
+                      Flight Log File
                       <span className="text-red-500 ml-1">*</span>
                     </label>
-                    <span className="text-xs text-neutral-400">Binary flight log data</span>
+                    <span className="text-xs text-neutral-400">Upload your drone flight log</span>
                   </div>
-                  <Input
-                    id="logFile"
-                    type="file"
-                    accept=".bin"
-                    onChange={handleFileChange}
-                  />
+                  <div className="border border-dashed border-neutral-700 rounded-md p-6 text-center hover:border-blue-500 transition-colors">
+                    {logFile ? (
+                      <div className="space-y-2">
+                        <p className="text-green-400 font-medium">File Selected:</p>
+                        <p className="text-white break-all">{logFile.name}</p>
+                        <p className="text-neutral-400 text-sm">{(logFile.size / 1024).toFixed(2)} KB</p>
+                        <p className="text-neutral-400 text-xs mt-2">
+                          Will be uploaded as: <span className="text-blue-400">task-{task.id}-{logFile.name}</span>
+                        </p>
+                        <Button
+                          variant="outline"
+                          className="mt-2"
+                          onClick={() => setLogFile(null)}
+                        >
+                          Change File
+                        </Button>
+                      </div>
+                    ) : (
+                      <div className="space-y-4">
+                        <div className="flex justify-center">
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 text-neutral-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                          </svg>
+                        </div>
+                        <div className="space-y-1">
+                          <p className="text-neutral-300">Drag and drop your log file here or</p>
+                          <div className="relative">
+                            <Input
+                              id="logFile"
+                              type="file"
+                              accept=".bin,.log"
+                              onChange={handleFileChange}
+                              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                            />
+                            <Button className="bg-blue-600 hover:bg-blue-700 w-full">
+                              Browse Files
+                            </Button>
+                          </div>
+                          <p className="text-neutral-500 text-xs">Supported formats: .bin, .log</p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
               
@@ -451,9 +504,9 @@ export function TaskDetail({ taskId }: TaskDetailProps) {
                 <Button 
                   className="bg-purple-600 hover:bg-purple-700"
                   onClick={handleCompleteTask}
-                  disabled={isSubmitting || !arweaveTxId || !logHash || !signature}
+                  disabled={isSubmitting || !logFile}
                 >
-                  {isSubmitting ? 'Submitting...' : 'Submit Completion'}
+                  {isFileUploading ? 'Uploading Log File...' : isSubmitting ? 'Processing...' : 'Complete Task'}
                 </Button>
               </DialogFooter>
             </DialogContent>
