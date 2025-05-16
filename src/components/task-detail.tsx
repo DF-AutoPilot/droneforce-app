@@ -164,22 +164,28 @@ export function TaskDetail({ taskId }: TaskDetailProps) {
   // Helper function to generate a simple hash from file content
   const generateFileHash = async (file: File): Promise<string> => {
     return new Promise((resolve) => {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        if (e.target && e.target.result) {
-          // In a real app, you would use a proper hashing algorithm
-          // This is a simple placeholder
-          const content = e.target.result.toString();
-          const hash = btoa(content.substring(0, 100)).replace(/=/g, ''); 
-          resolve(`0x${hash}`);
-        } else {
-          resolve(`0x${Date.now().toString(16)}`);
-        }
+      // For binary files, we'll use file metadata instead of content
+      // This is a safer approach for demo purposes
+      const fileInfo = {
+        name: file.name,
+        size: file.size,
+        type: file.type,
+        lastModified: file.lastModified,
+        timestamp: Date.now()
       };
-      reader.onerror = () => {
-        resolve(`0x${Date.now().toString(16)}`);
-      };
-      reader.readAsText(file.slice(0, 1024)); // Read just the beginning of the file for demo
+      
+      // Create a string from file metadata
+      const metadataStr = JSON.stringify(fileInfo);
+      
+      // Create a simple hash from the metadata string
+      // In production, you would use a proper crypto hash function
+      let hash = '';
+      for (let i = 0; i < metadataStr.length; i++) {
+        hash += metadataStr.charCodeAt(i).toString(16);
+      }
+      
+      // Trim to reasonable length and prefix with 0x
+      resolve(`0x${hash.substring(0, 40)}`);
     });
   };
   
