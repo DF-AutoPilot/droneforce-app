@@ -92,7 +92,7 @@ export function TaskDetail({ taskId }: TaskDetailProps) {
   };
   
   const handleCompleteTask = async () => {
-    if (!publicKey || !task || !logFile) {
+    if (!task || !logFile) {
       toast.error('Please select a log file');
       return;
     }
@@ -104,28 +104,28 @@ export function TaskDetail({ taskId }: TaskDetailProps) {
       // Generate a simple hash from the file content
       const fileHash = await generateFileHash(logFile);
       
+      // Generate placeholder values for blockchain integration
+      // In a real implementation, these would be derived from the file or blockchain transaction
+      const arweaveTxId = `ar:mock:${Date.now().toString(36)}`;
+      const logHash = fileHash;
+      const signature = `sig:${Date.now().toString(36)}:${publicKey?.toString().slice(0, 8) || 'anon'}`;
+      
       try {
-        // Generate placeholder values for blockchain integration
-        // In a real implementation, these would be derived from the file or blockchain transaction
-        const arweaveTxId = `ar:mock:${Date.now().toString(36)}`;
-        const logHash = fileHash;
-        const signature = `sig:${Date.now().toString(36)}:${publicKey.toString().slice(0, 8)}`;
-        
-        // Use blockchain service to handle the transaction
-        const txSignature = await blockchainService.completeTask(
-          wallet,
-          task.id,
+        // Skip blockchain transaction for now, just log what would happen
+        console.log('Would create blockchain transaction with:', {
+          taskId: task.id,
           arweaveTxId,
           logHash,
           signature
-        );
-        
-        console.log('Transaction signature:', txSignature);
+        });
         
         // Rename the file with the correct format before upload
         const renamedFile = renameFile(logFile, `task-${task.id}-${logFile.name}`);
         
-        // Update in Firestore and upload log file
+        // Log what we're about to do
+        console.log('Uploading file:', renamedFile.name, 'size:', renamedFile.size);
+        
+        // Update in Firestore and upload log file - this handles the Firebase storage upload
         await completeTask(
           task.id,
           arweaveTxId,
@@ -148,9 +148,9 @@ export function TaskDetail({ taskId }: TaskDetailProps) {
         
         // Reset form fields
         setLogFile(null);
-      } catch (instructionError: any) {
-        console.error('Error with complete task instruction:', instructionError);
-        throw new Error(`Failed to create complete task instruction: ${instructionError.message}`);
+      } catch (uploadError: any) {
+        console.error('Error uploading file:', uploadError);
+        throw new Error(`Failed to upload file: ${uploadError.message}`);
       }
     } catch (error: any) {
       console.error('Error completing task:', error);
