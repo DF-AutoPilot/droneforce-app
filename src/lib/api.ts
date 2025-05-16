@@ -293,10 +293,19 @@ export async function completeTask(
     
     // Upload log file if provided
     if (logFile) {
-      logInfo('Uploading log file to storage', { taskId: id, fileName: `logs/${id}.bin`, fileSize: logFile.size });
-      const storageRef = ref(storage, `logs/${id}.bin`);
+      // Use the file's actual name (which should already be formatted as task-{id}-filename.bin)
+      const fileName = logFile.name;
+      
+      // Double-check if the filename follows our convention, if not, prepend the task ID
+      const finalFileName = fileName.startsWith(`task-${id}`) ? fileName : `task-${id}-${fileName}`;
+      
+      // Log the upload with the proper filename
+      logInfo('Uploading log file to storage', { taskId: id, fileName: `logs/${finalFileName}`, fileSize: logFile.size });
+      
+      // Use the proper path with the formatted filename
+      const storageRef = ref(storage, `logs/${finalFileName}`);
       await uploadBytes(storageRef, logFile);
-      logInfo('Log file uploaded successfully', { taskId: id });
+      logInfo('Log file uploaded successfully', { taskId: id, fileName: finalFileName });
     }
     
     logInfo('Updating task status to completed in Firestore', { taskId: id });
