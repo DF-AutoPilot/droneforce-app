@@ -74,17 +74,35 @@ dist/
 # Local Netlify folder
 .netlify
 
-# mobile directory
+# DroneForceRN directories and files to ignore
 /DroneForceRN/node_modules/
 /DroneForceRN/.bundle/
 /DroneForceRN/.gradle/
 /DroneForceRN/build/
 /DroneForceRN/dist/
+
+# Android specific ignores
 /DroneForceRN/android/build/
 /DroneForceRN/android/.gradle/
 /DroneForceRN/android/local.properties
+/DroneForceRN/android/captures/
+/DroneForceRN/android/app/build/
+/DroneForceRN/android/app/release/
+/DroneForceRN/android/app/src/main/assets/index.android.bundle
+/DroneForceRN/android/app/src/main/assets/index.android.bundle.meta
+/DroneForceRN/android/app/src/main/res/drawable-*/
+/DroneForceRN/android/app/debug/
+/DroneForceRN/android/*.keystore
+/DroneForceRN/android/*.apk
+
+# iOS specific ignores
 /DroneForceRN/ios/build/
 /DroneForceRN/ios/Pods/
+/DroneForceRN/ios/Podfile.lock
+/DroneForceRN/ios/*.xcworkspace/xcuserdata/
+/DroneForceRN/ios/vendor/
+
+# General mobile app ignores
 /DroneForceRN/*.jsbundle
 /DroneForceRN/.DS_Store
 /DroneForceRN/*.hprof
