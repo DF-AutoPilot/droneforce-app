@@ -7,11 +7,21 @@ import { getTasks } from '@/lib/api';
 import { Task } from '@/types/task';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { TaskCard } from '@/components/task/task-card';
+import { TaskFilters, FilterCriteria } from '@/components/ui/task-filters';
+import { calculateDistance } from '@/lib/geo-utils';
 
 export function TaskList() {
   const { publicKey } = useWallet();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
+  const [filters, setFilters] = useState<FilterCriteria>({
+    status: 'all',
+    radius: 0,
+    minPrice: 0,
+    maxPrice: 100,
+    useCurrentLocation: false
+  });
+  const [userLocation, setUserLocation] = useState<[number, number] | null>(null);
   
   useEffect(() => {
     const loadTasks = async () => {
@@ -29,17 +39,73 @@ export function TaskList() {
     loadTasks();
   }, []);
   
-  const myCreatedTasks = tasks.filter(
+  // Update user location when using current location filter
+  useEffect(() => {
+    if (filters.useCurrentLocation && !userLocation) {
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+          position => {
+            setUserLocation([position.coords.latitude, position.coords.longitude]);
+          },
+          error => {
+            console.error('Error getting location:', error);
+          }
+        );
+      }
+    }
+  }, [filters.useCurrentLocation, userLocation]);
+  
+  // Apply filters to tasks
+  const applyFilters = (taskList: Task[]) => {
+    return taskList.filter(task => {
+      // Status filter
+      if (filters.status !== 'all' && task.status !== filters.status) {
+        return false;
+      }
+      
+      // Price filter
+      const taskPrice = task.paymentAmount || 0;
+      if (taskPrice < filters.minPrice || taskPrice > filters.maxPrice) {
+        return false;
+      }
+      
+      // Location radius filter
+      if (filters.useCurrentLocation && userLocation && filters.radius > 0) {
+        try {
+          const [taskLat, taskLng] = task.location.split(',').map(parseFloat);
+          const distance = calculateDistance(
+            userLocation[0], userLocation[1],
+            taskLat, taskLng
+          );
+          
+          if (distance > filters.radius) {
+            return false;
+          }
+        } catch (error) {
+          // If location parsing fails, include the task anyway
+          console.error('Error parsing location:', error);
+        }
+      }
+      
+      return true;
+    });
+  };
+  
+  const handleFilterChange = (newFilters: FilterCriteria) => {
+    setFilters(newFilters);
+  };
+  
+  const myCreatedTasks = applyFilters(tasks.filter(
     task => task.creator === publicKey?.toBase58()
-  );
+  ));
   
-  const myOperatedTasks = tasks.filter(
+  const myOperatedTasks = applyFilters(tasks.filter(
     task => task.operator === publicKey?.toBase58()
-  );
+  ));
   
-  const otherTasks = tasks.filter(
+  const otherTasks = applyFilters(tasks.filter(
     task => task.creator !== publicKey?.toBase58() && task.operator !== publicKey?.toBase58()
-  );
+  ));
   
   // Status classes are now handled by the TaskCard component
   
@@ -84,6 +150,10 @@ export function TaskList() {
             <TabsTrigger value="myOperated" className="flex-1">My Operated</TabsTrigger>
             <TabsTrigger value="other" className="flex-1">All Other</TabsTrigger>
           </TabsList>
+          
+          {/* Task Filters */}
+          <TaskFilters onFilterChange={handleFilterChange} />
+          
           <TabsContent value="myCreated">
             {renderTaskList(myCreatedTasks)}
           </TabsContent>

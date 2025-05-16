@@ -8,12 +8,19 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import dynamic from 'next/dynamic';
 import { getTaskById, acceptTask, completeTask } from '@/lib/api';
 import { Task } from '@/types/task';
 // Import the blockchain service instead of direct functions
 import { blockchainService } from '@/services';
 // Remove Transaction import as it's handled by the service
 import { formatDate } from '@/lib/utils';
+
+// Dynamically import the LocationMap component (client-only)
+const LocationMap = dynamic(
+  () => import('@/components/ui/location-map').then(mod => mod.LocationMap),
+  { ssr: false }
+);
 import { toast } from 'sonner';
 import { FormField } from '@/components/ui/form-field';
 import { VerifyTaskForm } from '@/components/task/verify-task-form';
@@ -265,10 +272,18 @@ export function TaskDetail({ taskId }: TaskDetailProps) {
             <h3 className="text-sm font-medium text-neutral-400">Operator</h3>
             <p className="text-white">{task.operator || 'Not assigned'}</p>
           </div>
-          
-          <div className="space-y-2">
-            <h3 className="text-sm font-medium text-neutral-400">Location</h3>
-            <p className="text-white">{task.location}</p>
+
+          {/* Location Map Section */}
+          <div className="md:col-span-2 space-y-3 mt-2 mb-4">
+            <div className="flex justify-between items-center">
+              <h3 className="text-sm font-medium text-neutral-400">Location</h3>
+              <p className="text-white text-sm">{task.location}</p>
+            </div>
+            <LocationMap 
+              coords={task.location} 
+              radius={task.areaSize} 
+              className="rounded-lg h-72" 
+            />
           </div>
           
           <div className="space-y-2">
@@ -283,7 +298,7 @@ export function TaskDetail({ taskId }: TaskDetailProps) {
           
           <div className="space-y-2">
             <h3 className="text-sm font-medium text-neutral-400">Duration</h3>
-            <p className="text-white">{task.duration} seconds</p>
+            <p className="text-white">{task.duration} minutes</p>
           </div>
           
           <div className="space-y-2">

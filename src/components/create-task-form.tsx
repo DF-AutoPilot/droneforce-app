@@ -7,6 +7,7 @@ import { useWallet } from '@solana/wallet-adapter-react';
 import { Transaction, PublicKey } from '@solana/web3.js';
 import { toast } from 'sonner';
 import { getAssociatedTokenAddressSync } from '@solana/spl-token';
+import dynamic from 'next/dynamic';
 
 import { createTask } from '@/lib/api';
 import { connection } from '@/lib/solana';
@@ -16,6 +17,12 @@ import { generateTaskId } from '@/lib/utils';
 import { Form } from '@/components/ui/form';
 import { FormField } from '@/components/ui/form-field';
 import { CheckboxField } from '@/components/ui/checkbox-field';
+
+// Dynamic import for the MapSelector (client-side only)
+const MapSelector = dynamic(
+  () => import('@/components/ui/map-selector').then(mod => mod.MapSelector),
+  { ssr: false } // Disable server-side rendering
+);
 
 // Default SPL tokens available for payment (in a real app, you might fetch these)
 const AVAILABLE_TOKENS = [
@@ -77,7 +84,7 @@ export function CreateTaskForm() {
     if (type === 'number') {
       setTaskData({
         ...taskData,
-        [name]: parseInt(value, 10)
+        [name]: parseFloat(value)
       });
     } else {
       setTaskData({
@@ -249,126 +256,149 @@ export function CreateTaskForm() {
       onSubmit={handleSubmit}
       submitLabel={isSubmitting ? 'Creating...' : 'Create Task'}
       isSubmitting={isSubmitting}
+      className="max-w-full"
     >
-      <FormField
-        id="location"
-        name="location"
-        label="Location (lat/lng)"
-        placeholder="37.7749,-122.4194"
-        value={taskData.location}
-        onChange={handleChange}
-        required
-        helpText="Enter coordinates in format: latitude,longitude"
-      />
-      
-      <FormField
-        id="areaSize"
-        name="areaSize"
-        label="Area Size"
-        type="number"
-        min="1"
-        value={taskData.areaSize}
-        onChange={handleChange}
-        required
-        helpText="Diameter in meters"
-      />
-      
-      <FormField
-        id="altitude"
-        name="altitude"
-        label="Altitude"
-        type="number"
-        min="1"
-        value={taskData.altitude}
-        onChange={handleChange}
-        required
-        helpText="Height in meters"
-      />
-      
-      <FormField
-        id="duration"
-        name="duration"
-        label="Duration"
-        type="number"
-        min="1"
-        value={taskData.duration}
-        onChange={handleChange}
-        required
-        helpText="Time in seconds (max 255)"
-      />
-      
-      <CheckboxField
-        id="geofencingEnabled"
-        label="Enable Geofencing"
-        checked={taskData.geofencingEnabled}
-        onCheckedChange={handleCheckboxChange}
-        helpText="Restrict drone to specified area"
-      />
-      
-      <FormField
-        id="description"
-        name="description"
-        label="Description"
-        placeholder="Task description"
-        value={taskData.description}
-        onChange={handleChange}
-        required
-        helpText="Details about the task"
-      />
-      
-      {/* Payment section */}
-      <div className="mt-6 mb-4 border-t pt-4">
-        <h3 className="text-lg font-medium mb-2">Payment Details</h3>
-        <p className="text-sm text-neutral-400 mb-4">
-          Funds will be held in escrow until task completion
-        </p>
-      </div>
-      
-      <div className="flex gap-4">
-        <div className="flex-1">
-          <FormField
-            id="paymentAmount"
-            name="paymentAmount"
-            label="Payment Amount"
-            type="number"
-            min="0.001"
-            step="0.001"
-            value={taskData.paymentAmount}
-            onChange={handleChange}
-            required
-            helpText="Amount to pay for the service"
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        {/* Left column - Map */}
+        <div className="lg:col-span-7">
+          <MapSelector
+            value={taskData.location}
+            onChange={(location) => setTaskData(prev => ({ ...prev, location }))}
+            radius={taskData.areaSize}
+            className="h-[500px] w-full rounded-lg"
           />
         </div>
-        
-        <div className="flex-1">
-          <label htmlFor="selectedToken" className="block text-sm font-medium mb-1">
-            Token
-          </label>
-          <select
-            id="selectedToken"
-            name="selectedToken"
-            value={taskData.selectedToken}
+
+        {/* Right column - Form fields */}
+        <div className="lg:col-span-5 space-y-4">
+          <FormField
+            id="location"
+            name="location"
+            label="Location (lat/lng)"
+            placeholder="37.7749,-122.4194"
+            value={taskData.location}
             onChange={handleChange}
-            className="w-full rounded-md border bg-neutral-900 border-neutral-800 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             required
-          >
-            {AVAILABLE_TOKENS.map((token) => (
-              <option key={token.mint} value={token.mint}>
-                {token.name} ({token.symbol})
-              </option>
-            ))}
-          </select>
-          <p className="text-sm text-neutral-500 mt-1">
-            Select token for payment
-          </p>
+            helpText="Enter coordinates or click on the map"
+          />
+          
+          <div className="grid grid-cols-2 gap-4">
+            <FormField
+              id="areaSize"
+              name="areaSize"
+              label="Area Size"
+              type="number"
+              min="1"
+              value={taskData.areaSize}
+              onChange={handleChange}
+              required
+              helpText="Diameter in meters"
+            />
+            
+            <FormField
+              id="altitude"
+              name="altitude"
+              label="Altitude"
+              type="number"
+              min="1"
+              value={taskData.altitude}
+              onChange={handleChange}
+              required
+              helpText="Height in meters"
+            />
+          </div>
+          
+          <div className="grid grid-cols-2 gap-4">
+            <FormField
+              id="duration"
+              name="duration"
+              label="Duration"
+              type="number"
+              min="1"
+              value={taskData.duration}
+              onChange={handleChange}
+              required
+              helpText="(minutes)"
+            />
+            
+            <div className="pt-6">
+              <CheckboxField
+                id="geofencingEnabled"
+                label="Enable Geofencing"
+                checked={taskData.geofencingEnabled}
+                onCheckedChange={handleCheckboxChange}
+                helpText="Restrict drone to specified area"
+              />
+            </div>
+          </div>
+          
+          <FormField
+            id="description"
+            name="description"
+            label="Description"
+            placeholder="Task description"
+            value={taskData.description}
+            onChange={handleChange}
+            required
+            helpText="Details about the task"
+            className="border-b-0"
+          />
+          
+          {/* Payment section */}
+          <div className="mt-2 mb-3 pt-2">
+            <h3 className="text-lg font-medium mb-1 text-white">Payment Details</h3>
+            <p className="text-sm text-neutral-400 mb-2">
+              Funds will be held in escrow until task completion
+            </p>
+          </div>
+          
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <FormField
+                id="paymentAmount"
+                name="paymentAmount"
+                label="Payment Amount"
+                type="number"
+                min="0.001"
+                step="0.001"
+                value={taskData.paymentAmount}
+                onChange={handleChange}
+                required
+                helpText="Amount to pay for the service"
+              />
+            </div>
+            
+            <div>
+              <label htmlFor="selectedToken" className="block text-sm font-medium mb-1">
+                Token
+              </label>
+              <p className="text-sm text-neutral-500 mb-1">
+                Select token for payment
+              </p>
+              <select
+                id="selectedToken"
+                name="selectedToken"
+                value={taskData.selectedToken}
+                onChange={handleChange}
+                className="w-full rounded-md border bg-neutral-900 border-neutral-800 px-3 py-2.5 text-sm text-neutral-200 h-10 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                required
+              >
+                {AVAILABLE_TOKENS.map((token) => (
+                  <option key={token.mint} value={token.mint}>
+                    {token.name} ({token.symbol})
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+          
+          {!hasTokenAccount && publicKey && (
+            <div className="p-2 bg-yellow-900 text-yellow-200 rounded-md text-sm">
+              Warning: You may need to create a token account for the selected token
+            </div>
+          )}
         </div>
       </div>
-      
-      {!hasTokenAccount && publicKey && (
-        <div className="mt-2 p-2 bg-yellow-900 text-yellow-200 rounded-md text-sm">
-          Warning: You may need to create a token account for the selected token
-        </div>
-      )}
     </Form>
   );
 }

@@ -1,0 +1,43 @@
+/* Dark theme styling for the map */
+.leaflet-container {
+  background-color: #1a1a1a;
+}
+
+/* Make tiles darker to match our app theme */
+.dark-map-tiles {
+  filter: brightness(0.6) invert(1) contrast(3) hue-rotate(200deg) saturate(0.3) brightness(0.7);
+}
+
+/* Style popup and tooltips to match dark theme */
+.leaflet-popup-content-wrapper,
+.leaflet-popup-tip {
+  background-color: #1a1a1a;
+  color: #e5e5e5;
+  border: 1px solid #333;
+}
+
+/* Customize controls to match theme */
+.leaflet-control-zoom a {
+  background-color: #1a1a1a !important;
+  color: #e5e5e5 !important;
+  border-color: #333 !important;
+}
+
+.leaflet-control-zoom a:hover {
+  background-color: #333 !important;
+}
+
+/* Fix icon positioning issue in Leaflet with Next.js */
+.leaflet-div-icon {
+  background: transparent;
+  border: none;
+}
+
+.leaflet-control-attribution {
+  background-color: rgba(26, 26, 26, 0.8) !important;
+  color: #999 !important;
+}
+
+.leaflet-control-attribution a {
+  color: #999 !important;
+}

@@ -12,6 +12,7 @@ interface FormProps {
   submitLabel: string;
   isSubmitting?: boolean;
   footer?: ReactNode;
+  className?: string;
 }
 
 export function Form({
@@ -21,10 +22,11 @@ export function Form({
   onSubmit,
   submitLabel = 'Submit',
   isSubmitting = false,
-  footer
+  footer,
+  className = ''
 }: FormProps) {
   return (
-    <Card className="w-full border border-neutral-800 bg-neutral-950/80 backdrop-blur-sm">
+    <Card className={`w-full border border-neutral-800 bg-neutral-950/80 backdrop-blur-sm ${className}`}>
       <CardHeader>
         <CardTitle className="text-xl text-white">{title}</CardTitle>
         {description && (
