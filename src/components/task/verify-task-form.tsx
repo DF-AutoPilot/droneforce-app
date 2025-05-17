@@ -31,7 +31,7 @@ export function VerifyTaskForm({ task, onVerificationComplete }: VerifyTaskFormP
   // Check if task is in the right state to be verified
   const canVerify = task.status === 'completed' && !task.verificationResult;
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setVerificationData({
       ...verificationData,

@@ -5,19 +5,20 @@ import React from 'react';
 import { Input } from '@/components/ui/input';
 import theme from '@/styles/theme';
 
-interface FormFieldProps {
+export interface FormFieldProps {
   id: string;
   name: string;
   label: string;
   type?: string;
   placeholder?: string;
   value: string | number;
-  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => void;
   required?: boolean;
   min?: string;
   step?: string;
   helpText?: string;
   error?: string;
+  className?: string;
 }
 
 export function FormField({
@@ -32,7 +33,8 @@ export function FormField({
   min,
   step,
   helpText,
-  error
+  error,
+  className
 }: FormFieldProps) {
   return (
     <div className="space-y-2">
@@ -58,7 +60,7 @@ export function FormField({
         step={step}
         className={`border-neutral-800 bg-neutral-900 text-white placeholder:text-neutral-500 ${
           error ? 'border-red-500 focus:border-red-500' : 'focus:border-blue-500 focus:ring-blue-500/10'
-        }`}
+        } ${className || ''}`}
       />
       
       {error && (

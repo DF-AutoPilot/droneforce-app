@@ -341,8 +341,9 @@ export function CreateTaskForm() {
             onChange={handleChange}
             required
             helpText="Details about the task"
-            className="border-b-0"
           />
+          {/* Added a div with the border styling we want */}
+          <div className="border-b-0"></div>
           
           {/* Payment section */}
           <div className="mt-2 mb-3 pt-2">
