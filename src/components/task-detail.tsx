@@ -478,15 +478,16 @@ export function TaskDetail({ taskId }: TaskDetailProps) {
                   <div className="border border-dashed border-neutral-700 rounded-md p-6 text-center hover:border-blue-500 transition-colors">
                     {logFile ? (
                       <div className="space-y-2">
-                        <p className="text-green-400 font-medium">File Selected:</p>
+                        <p className="text-white font-medium">File Selected:</p>
                         <p className="text-white break-all">{logFile.name}</p>
                         <p className="text-neutral-400 text-sm">{(logFile.size / 1024).toFixed(2)} KB</p>
                         <p className="text-neutral-400 text-xs mt-2">
                           Will be uploaded as: <span className="text-blue-400">task-{task.id}-{logFile.name}</span>
                         </p>
                         <Button
+                          className="mt-2 border-blue-500 text-blue-500 hover:bg-blue-100 hover:text-blue-700"
                           variant="outline"
-                          className="mt-2"
+                          size="sm"
                           onClick={() => setLogFile(null)}
                         >
                           Change File
